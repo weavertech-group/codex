@@ -4,6 +4,7 @@ use std::sync::Arc;
 use codex_login::AuthManager;
 use codex_login::CodexAuth;
 use codex_model_provider_info::ModelProviderInfo;
+use codex_model_provider_info::WireApi;
 use codex_models_manager::cache::ModelsCache;
 use codex_models_manager::manager::SharedModelsManager;
 use codex_models_manager::manager::StaticModelsManager;
@@ -21,7 +22,8 @@ use crate::provider::SharedModelProvider;
 pub(crate) const GROK_PROVIDER_NAME: &str = "Grok";
 
 pub(crate) fn is_grok_provider_info(provider_info: &ModelProviderInfo) -> bool {
-    provider_info.name.eq_ignore_ascii_case(GROK_PROVIDER_NAME)
+    provider_info.wire_api == WireApi::GrokResponses
+        || provider_info.name.eq_ignore_ascii_case(GROK_PROVIDER_NAME)
 }
 
 /// Grok runtime identity layered on top of stock configured-provider behavior.
