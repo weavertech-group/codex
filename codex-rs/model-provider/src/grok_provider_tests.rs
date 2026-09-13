@@ -172,6 +172,55 @@ fn grok_does_not_advertise_remote_compaction_v2() {
 }
 
 #[test]
+fn grok_internal_tasks_use_bundled_model_not_openai_ids() {
+    let grok = create_model_provider(provider_info("Grok"), /*auth_manager*/ None);
+    let openai = create_model_provider(provider_info("OpenAI"), /*auth_manager*/ None);
+    let custom = create_model_provider(provider_info("Custom"), /*auth_manager*/ None);
+    let bundled = static_model_catalog()
+        .models
+        .into_iter()
+        .next()
+        .expect("bundled Grok catalog should contain a model");
+
+    assert_eq!(
+        (
+            grok.approval_review_preferred_model(),
+            grok.memory_extraction_preferred_model(),
+            grok.memory_consolidation_preferred_model(),
+        ),
+        (
+            bundled.slug.as_str(),
+            bundled.slug.as_str(),
+            bundled.slug.as_str(),
+        )
+    );
+    assert_ne!(
+        grok.approval_review_preferred_model(),
+        openai.approval_review_preferred_model()
+    );
+    assert_ne!(
+        grok.memory_extraction_preferred_model(),
+        openai.memory_extraction_preferred_model()
+    );
+    assert_ne!(
+        grok.memory_consolidation_preferred_model(),
+        openai.memory_consolidation_preferred_model()
+    );
+    assert_eq!(
+        (
+            custom.approval_review_preferred_model(),
+            custom.memory_extraction_preferred_model(),
+            custom.memory_consolidation_preferred_model(),
+        ),
+        (
+            openai.approval_review_preferred_model(),
+            openai.memory_extraction_preferred_model(),
+            openai.memory_consolidation_preferred_model(),
+        )
+    );
+}
+
+#[test]
 fn grok_ultra_resolves_to_xhigh_only_at_request_normalization() {
     let model = static_model_catalog()
         .models
