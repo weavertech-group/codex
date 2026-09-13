@@ -6,14 +6,43 @@
 //! These tests do not introduce lifecycle ownership for Grok; they prove that
 //! stock 0.154 durable thread settings remain authoritative.
 
-use super::*;
+use super::compaction::wait_for_context_compaction_completed;
+use super::compaction::wait_for_context_compaction_started;
+use super::compaction::wait_for_turn_completed;
+use anyhow::Result;
+use app_test_support::MockResponsesConfig;
+use app_test_support::TestAppServer;
+use codex_app_server_protocol::JSONRPCError;
+use codex_app_server_protocol::RequestId;
+use codex_app_server_protocol::ThreadCompactStartParams;
+use codex_app_server_protocol::ThreadCompactStartResponse;
 use codex_app_server_protocol::ThreadForkParams;
 use codex_app_server_protocol::ThreadForkResponse;
+use codex_app_server_protocol::ThreadItem;
 use codex_app_server_protocol::ThreadReadParams;
 use codex_app_server_protocol::ThreadReadResponse;
+use codex_app_server_protocol::ThreadResumeParams;
+use codex_app_server_protocol::ThreadResumeResponse;
+use codex_app_server_protocol::ThreadStartParams;
+use codex_app_server_protocol::ThreadStartResponse;
+use codex_app_server_protocol::TurnCompletedNotification;
+use codex_app_server_protocol::TurnStartParams;
+use codex_app_server_protocol::TurnStartResponse;
 use codex_app_server_protocol::TurnStatus;
+use codex_app_server_protocol::UserInput as V2UserInput;
+use core_test_support::responses;
+use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
+use tempfile::TempDir;
+use tokio::time::timeout;
 use wiremock::ResponseTemplate;
+
+// macOS and Windows Bazel CI can spend tens of seconds starting app-server
+// subprocesses or processing test RPCs under load.
+#[cfg(any(target_os = "macos", windows))]
+const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+#[cfg(not(any(target_os = "macos", windows)))]
+const DEFAULT_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
 const GROK_PROVIDER: &str = "grok";
 const GROK_MODEL: &str = "grok-4.6";
@@ -103,6 +132,8 @@ fn assert_all_requests_are_grok(mock: &responses::ResponseMock, expected: usize)
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn grok_normal_continuation_keeps_provider_binding() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+
     let server = responses::start_mock_server().await;
     let mock = responses::mount_response_sequence(
         &server,
@@ -155,6 +186,8 @@ async fn grok_normal_continuation_keeps_provider_binding() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn grok_fork_keeps_provider_binding_and_isolates_branch_failure() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+
     let server = responses::start_mock_server().await;
     let mock = responses::mount_response_sequence(
         &server,
@@ -231,6 +264,8 @@ async fn grok_fork_keeps_provider_binding_and_isolates_branch_failure() -> Resul
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn grok_cold_restart_resume_keeps_provider_binding() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+
     let server = responses::start_mock_server().await;
     let mock = responses::mount_response_sequence(
         &server,
@@ -314,6 +349,8 @@ async fn grok_cold_restart_resume_keeps_provider_binding() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn grok_manual_compaction_keeps_provider_binding() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+
     let server = responses::start_mock_server().await;
     let mock = responses::mount_response_sequence(
         &server,

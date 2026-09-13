@@ -61,6 +61,7 @@ jobs:
         working-directory: grok/live
         env:
           GROK_LIVE: "1"
+          GROK_LIVE_CODEX_BIN: ${{ env.GROK_LIVE_CODEX_BIN }}
           GROK_LIVE_CONFIG: ${{ runner.temp }}/config.toml
           GOWORK: "off"
         run: go test ./... -count=1 -timeout 15m -run '^(TestGrokBasic|TestGrokCollaboration)$'
