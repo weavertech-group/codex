@@ -75,6 +75,18 @@ impl ModelProvider for GrokModelProvider {
         true
     }
 
+    fn approval_review_preferred_model(&self) -> &'static str {
+        crate::grok_catalog::GROK_4_6_MODEL_ID
+    }
+
+    fn memory_extraction_preferred_model(&self) -> &'static str {
+        crate::grok_catalog::GROK_4_6_MODEL_ID
+    }
+
+    fn memory_consolidation_preferred_model(&self) -> &'static str {
+        crate::grok_catalog::GROK_4_6_MODEL_ID
+    }
+
     fn is_provider_hosted_tool_call(&self, item: &ResponseItem) -> bool {
         matches!(
             item,

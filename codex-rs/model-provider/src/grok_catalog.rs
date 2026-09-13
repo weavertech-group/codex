@@ -11,7 +11,7 @@ use codex_protocol::openai_models::TruncationPolicyConfig;
 use codex_protocol::openai_models::WebSearchToolType;
 use codex_protocol::protocol::MultiAgentVersion;
 
-const GROK_4_6_MODEL_ID: &str = "grok-4.6";
+pub(crate) const GROK_4_6_MODEL_ID: &str = "grok-4.6";
 const GROK_CONTEXT_WINDOW: i64 = 500_000;
 const GROK_AUTO_COMPACT_TOKEN_LIMIT: i64 = 400_000;
 
