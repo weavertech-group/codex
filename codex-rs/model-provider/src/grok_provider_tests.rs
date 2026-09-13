@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use codex_model_provider_info::ModelProviderInfo;
+use codex_model_provider_info::WireApi;
 use codex_models_manager::cache::ModelsCache;
 use codex_models_manager::cache::ModelsCacheEntry;
 use codex_models_manager::cache::ModelsCacheError;
@@ -69,6 +70,16 @@ fn grok_provider_identity_is_explicit_and_does_not_match_stock_profiles() {
     assert!(is_grok_provider_info(&provider_info("gRoK")));
     assert!(!is_grok_provider_info(&provider_info("OpenAI")));
     assert!(!is_grok_provider_info(&provider_info("Custom")));
+}
+
+#[test]
+fn grok_provider_identity_matches_serialized_wire_selector() {
+    let mut info = provider_info("Custom");
+    info.wire_api = WireApi::GrokResponses;
+    assert!(is_grok_provider_info(&info));
+
+    let provider = create_model_provider(info, /*auth_manager*/ None);
+    assert!(provider.projects_tools_as_flat_functions());
 }
 
 #[tokio::test]

@@ -5,6 +5,11 @@
 //! model across ordinary continuation, fork, cold resume, and compaction.
 //! These tests do not introduce lifecycle ownership for Grok; they prove that
 //! stock 0.154 durable thread settings remain authoritative.
+//!
+//! Durable identity is the stock `model_provider` id on the thread/session.
+//! Resume, fork, and compaction reconstruct the runtime provider from the
+//! current App Server process profile map. `wire_api = "grok_responses"` is
+//! the serialized Grok selector; HTTP transport stays stock Responses.
 
 use super::compaction::wait_for_context_compaction_completed;
 use super::compaction::wait_for_context_compaction_started;
@@ -55,6 +60,7 @@ fn grok_profile(server_uri: &str) -> MockResponsesConfig {
         .with_model_provider(GROK_PROVIDER)
         .with_provider_name("Grok")
         .with_provider_base_url(&format!("{server_uri}/api/codex"))
+        .with_wire_api("grok_responses")
         .with_provider_config("supports_websockets = false\nrequires_openai_auth = false")
 }
 
